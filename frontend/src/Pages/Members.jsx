@@ -19,7 +19,7 @@ const Members = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/members');
+        const response = await fetch('https://kangemi-backend.onrender.com/api/members');
         const data = await response.json();
         setMembers(data);
         setLoading(false);
@@ -67,8 +67,8 @@ const Members = () => {
 
     try {
       const url = editMode 
-        ? `http://localhost:5000/api/members/${currentMemberId}`
-        : 'http://localhost:5000/api/members';
+        ? `https://kangemi-backend.onrender.com/api/members/${currentMemberId}`
+        : 'https://kangemi-backend.onrender.com/api/members';
       
       const method = editMode ? 'PUT' : 'POST';
 
@@ -121,7 +121,7 @@ const Members = () => {
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/members/${id}`, {
+      const response = await fetch(`https://kangemi-backend.onrender.com/api/members/${id}`, {
         method: 'DELETE',
       });
 

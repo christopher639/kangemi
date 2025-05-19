@@ -46,7 +46,7 @@ const Contributions = () => {
   const fetchContributions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/contributions/${selectedYear}`);
+      const response = await fetch(`https://kangemi-backend.onrender.com/api/contributions/${selectedYear}`);
       if (!response.ok) {
         throw new Error('Failed to fetch contributions');
       }
@@ -103,7 +103,7 @@ const Contributions = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/contributions/member/${currentContribution.member._id}/month/${formData.month}`,
+        `https://kangemi-backend.onrender.com/api/contributions/member/${currentContribution.member._id}/month/${formData.month}`,
         {
           method: 'PUT',
           headers: {
