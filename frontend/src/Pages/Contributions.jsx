@@ -300,7 +300,7 @@ const Contributions = () => {
             </div>
 
             <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
-              {contributions.length} Records
+              {contributions.length} <span className='hidden md:flex'>Records</span> <span className=' md:hidden'>R</span>
             </div>
             <button 
               onClick={exportToPDF}
