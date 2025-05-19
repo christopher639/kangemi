@@ -279,7 +279,7 @@ const Contributions = () => {
     <div className="container mx-auto PX-2 py-8">
       <div className="bg-white rounded-lg  p-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">Member Contributions</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Group Contributions</h1>
           
           <div className="flex items-center space-x-2">
             <div className="relative">

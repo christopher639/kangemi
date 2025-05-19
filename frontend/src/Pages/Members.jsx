@@ -143,7 +143,7 @@ const Members = () => {
     <div className="container mx-auto px-4 py-8">
     <div className='flex flex-col md:flex-row justify-between'  >
            <div>
-         <h1 className="text-3xl font-bold mb-8 text-blue-800">Kangemi Church Members</h1>
+         <h1 className="text-3xl font-bold mb-8 text-blue-800">Kangemi wemen Group</h1>
      </div>
       
       {/* Add Member Button */}
