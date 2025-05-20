@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 
 const Contributions = () => {
   const [contributions, setContributions] = useState([]);
+  const [filteredContributions, setFilteredContributions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +19,7 @@ const Contributions = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Month options for dropdown
   const months = [
@@ -43,6 +45,18 @@ const Contributions = () => {
     fetchContributions();
   }, [selectedYear]);
 
+  // Filter contributions by name when search term changes
+  useEffect(() => {
+    if (searchTerm === '') {
+      setFilteredContributions(contributions);
+    } else {
+      const filtered = contributions.filter(contribution => 
+        contribution.member.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredContributions(filtered);
+    }
+  }, [searchTerm, contributions]);
+
   const fetchContributions = async () => {
     try {
       setLoading(true);
@@ -60,6 +74,7 @@ const Contributions = () => {
       });
       
       setContributions(sortedData);
+      setFilteredContributions(sortedData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -97,6 +112,10 @@ const Contributions = () => {
     setSelectedYear(e.target.value);
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -132,6 +151,7 @@ const Contributions = () => {
       });
       
       setContributions(updatedContributions);
+      setFilteredContributions(updatedContributions);
 
       toast.success('Contribution updated successfully');
       setShowModal(false);
@@ -167,7 +187,7 @@ const Contributions = () => {
         "Total"
       ];
 
-      const tableData = contributions.map((contribution, index) => [
+      const tableData = filteredContributions.map((contribution, index) => [
         index + 1,
         contribution.member.name || "-",
         contribution.member.phone || "-",
@@ -176,13 +196,13 @@ const Contributions = () => {
         calculateTotal(contribution).toString()
       ]);
 
-      if (contributions.length > 0) {
+      if (filteredContributions.length > 0) {
         const summaryRow = [
           "", "TOTALS", "", "",
           ...months.map(m =>
-            contributions.reduce((sum, c) => sum + (c[m.value] || 0), 0).toString()
+            filteredContributions.reduce((sum, c) => sum + (c[m.value] || 0), 0).toString()
           ),
-          contributions.reduce((sum, c) => sum + calculateTotal(c), 0).toString()
+          filteredContributions.reduce((sum, c) => sum + calculateTotal(c), 0).toString()
         ];
         tableData.push(summaryRow);
       }
@@ -224,13 +244,13 @@ const Contributions = () => {
 
   const exportToExcel = () => {
     try {
-      if (contributions.length === 0) {
+      if (filteredContributions.length === 0) {
         toast.warning('No data to export');
         return;
       }
 
-      const data = contributions.map(contribution => ({
-        'Rank': contributions.indexOf(contribution) + 1,
+      const data = filteredContributions.map(contribution => ({
+        'Rank': filteredContributions.indexOf(contribution) + 1,
         'Name': contribution.member?.name || 'N/A',
         'Phone': contribution.member?.phone || 'N/A',
         'Email': contribution.member?.email || 'N/A',
@@ -281,45 +301,65 @@ const Contributions = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-gray-800">Group Contributions</h1>
           
-          <div className="flex items-center space-x-2">
-            <div className="relative">
-              <div className="flex items-center">
-                <select
-                  value={selectedYear}
-                  onChange={handleYearChange}
-                  className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 PX-2 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Search by name..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                 >
-                  {yearOptions.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <FaSearch />
-                </div>
-              </div>
+                  <FaTimes />
+                </button>
+              )}
             </div>
 
-            <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
-              {contributions.length} <span className='hidden md:flex'>Records</span> <span className=' md:hidden'>R</span>
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
+              <div className="relative">
+                <div className="flex items-center">
+                  <select
+                    value={selectedYear}
+                    onChange={handleYearChange}
+                    className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 PX-2 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                  >
+                    {yearOptions.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <FaSearch />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                {filteredContributions.length} <span className='hidden md:flex'>Records</span> <span className=' md:hidden'>R</span>
+              </div>
+              <button 
+                onClick={exportToPDF}
+                className="flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                PDF
+              </button>
+              <button 
+                onClick={exportToExcel}
+                className="flex items-center px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </button>
             </div>
-            <button 
-              onClick={exportToPDF}
-              className="flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
-              PDF
-            </button>
-            <button 
-              onClick={exportToExcel}
-              className="flex items-center px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Excel
-            </button>
           </div>
         </div>
         
@@ -327,7 +367,6 @@ const Contributions = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                
                 <th className="PX-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="PX-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                 <th className="PX-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
@@ -340,60 +379,67 @@ const Contributions = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {contributions.map((contribution, index) => {
-                const total = calculateTotal(contribution);
-                return (
-                  <tr key={contribution._id} className="hover:bg-gray-50 transition-colors">
-                  
-                    <td className="PX-2 py-3 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <span className="text-indigo-600 font-medium">
-                            {contribution.member.name.charAt(0)}
-                          </span>
+              {filteredContributions.length === 0 ? (
+                <tr>
+                  <td colSpan={months.length + 4} className="px-6 py-4 text-center text-gray-500">
+                    {searchTerm ? 'No matching members found' : 'No contributions found'}
+                  </td>
+                </tr>
+              ) : (
+                filteredContributions.map((contribution, index) => {
+                  const total = calculateTotal(contribution);
+                  return (
+                    <tr key={contribution._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="PX-2 py-3 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <span className="text-indigo-600 font-medium">
+                              {contribution.member.name.charAt(0)}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{contribution.member.name}</div>
+                            <div className="text-sm text-gray-500">{contribution.member.email}</div>
+                          </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{contribution.member.name}</div>
-                          <div className="text-sm text-gray-500">{contribution.member.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="PX-2 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {contribution.member.phone}
-                    </td>
-                    <td className="PX-2 py-3 whitespace-nowrap text-sm text-gray-500">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                        {contribution.year}
-                      </span>
-                    </td>
-                    {months.map((month) => (
-                      <td key={month.value} className="px-2 py-3 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => openEditModal(contribution, month.value)}
-                          className={`text-sm px-2 py-1 rounded-full ${
-                            contribution[month.value] > 0 
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
-                          disabled={isProcessing}
-                        >
-                          {contribution[month.value] || 0}
-                        </button>
                       </td>
-                    ))}
-                    <td className="PX-2 py-3 whitespace-nowrap">
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-                        {total}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="PX-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {contribution.member.phone}
+                      </td>
+                      <td className="PX-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                          {contribution.year}
+                        </span>
+                      </td>
+                      {months.map((month) => (
+                        <td key={month.value} className="px-2 py-3 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => openEditModal(contribution, month.value)}
+                            className={`text-sm px-2 py-1 rounded-full ${
+                              contribution[month.value] > 0 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                            disabled={isProcessing}
+                          >
+                            {contribution[month.value] || 0}
+                          </button>
+                        </td>
+                      ))}
+                      <td className="PX-2 py-3 whitespace-nowrap">
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                          {total}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
 
-        {contributions.length === 0 && !loading && (
+        {filteredContributions.length === 0 && !loading && !searchTerm && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

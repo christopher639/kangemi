@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserEdit, FaTrash, FaPlus, FaSpinner, FaTimes } from 'react-icons/fa';
+import { FaUserEdit, FaTrash, FaPlus, FaSpinner, FaTimes, FaEllipsisV } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const Members = () => {
   const [members, setMembers] = useState([]);
+  const [filteredMembers, setFilteredMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -14,6 +15,8 @@ const Members = () => {
   const [currentMemberId, setCurrentMemberId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedRows, setExpandedRows] = useState([]);
 
   // Fetch all members
   useEffect(() => {
@@ -22,6 +25,7 @@ const Members = () => {
         const response = await fetch('https://kangemi-backend.onrender.com/api/members');
         const data = await response.json();
         setMembers(data);
+        setFilteredMembers(data);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching members:', error);
@@ -32,6 +36,19 @@ const Members = () => {
 
     fetchMembers();
   }, []);
+
+  // Filter members by name or phone
+  useEffect(() => {
+    if (searchTerm === '') {
+      setFilteredMembers(members);
+    } else {
+      const filtered = members.filter(member => 
+        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (member.phone && member.phone.includes(searchTerm))
+      );
+      setFilteredMembers(filtered);
+    }
+  }, [searchTerm, members]);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -83,12 +100,16 @@ const Members = () => {
       const data = await response.json();
 
       if (editMode) {
-        setMembers(members.map(member => 
+        const updatedMembers = members.map(member => 
           member._id === currentMemberId ? data : member
-        ));
+        );
+        setMembers(updatedMembers);
+        setFilteredMembers(updatedMembers);
         toast.success('Member updated successfully');
       } else {
-        setMembers([...members, data]);
+        const newMembers = [...members, data];
+        setMembers(newMembers);
+        setFilteredMembers(newMembers);
         toast.success('Member added successfully');
       }
 
@@ -126,7 +147,9 @@ const Members = () => {
       });
 
       if (response.ok) {
-        setMembers(members.filter(member => member._id !== id));
+        const newMembers = members.filter(member => member._id !== id);
+        setMembers(newMembers);
+        setFilteredMembers(newMembers);
         toast.success('Member deleted successfully');
       } else {
         throw new Error('Failed to delete member');
@@ -139,24 +162,54 @@ const Members = () => {
     }
   };
 
+  // Toggle row expansion
+  const toggleRowExpansion = (id) => {
+    setExpandedRows(prev =>
+      prev.includes(id) 
+        ? prev.filter(rowId => rowId !== id)
+        : [...prev, id]
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-    <div className='flex flex-col md:flex-row justify-between'  >
-           <div>
-         <h1 className="text-3xl font-bold mb-8 text-blue-800">Kangemi wemen Group</h1>
-     </div>
-      
-      {/* Add Member Button */}
-      <div className="mb-8">
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
-        >
-          <FaPlus className="mr-2" />
-          Add New Member
-        </button>
+      <div className='flex flex-col md:flex-row justify-between'>
+        <div>
+          <h1 className="text-3xl font-bold mb-8 text-blue-800">Kangemi women Group</h1>
+        </div>
+        
+        {/* Add Member Button */}
+        <div className="mb-8">
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+          >
+            <FaPlus className="mr-2" />
+            Add New Member
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Search Filter */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <input
+            type="text"
+            placeholder="Search by name or phone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+            >
+              <FaTimes />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Member Modal */}
       {showModal && (
@@ -261,16 +314,16 @@ const Members = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider hidden sm:table-cell">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider hidden sm:table-cell">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider hidden md:table-cell">
                       Join Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider hidden md:table-cell">
                       Status
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-blue-800 uppercase tracking-wider">
@@ -279,49 +332,77 @@ const Members = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {members.length === 0 ? (
+                  {filteredMembers.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                        No members found
+                        {searchTerm ? 'No matching members found' : 'No members found'}
                       </td>
                     </tr>
                   ) : (
-                    members.map((member) => (
-                      <tr key={member._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{member.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                          {member.phone || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                          {member.email || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                          {new Date(member.joinDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${member.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {member.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleEdit(member)}
-                            className="text-blue-600 hover:text-blue-900 mr-4"
-                            disabled={isProcessing}
-                          >
-                            <FaUserEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(member._id)}
-                            className="text-red-600 hover:text-red-900"
-                            disabled={isProcessing}
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
+                    filteredMembers.map((member) => (
+                      <React.Fragment key={member._id}>
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="font-medium text-gray-900">{member.name}</div>
+                            {/* Show more button for small screens */}
+                            <button 
+                              className="sm:hidden text-blue-600 hover:text-blue-800 mt-1 flex items-center text-sm"
+                              onClick={() => toggleRowExpansion(member._id)}
+                            >
+                              <FaEllipsisV className="mr-1" />
+                              {expandedRows.includes(member._id) ? 'Less' : 'More'}
+                            </button>
+                            {/* Expanded content for small screens */}
+                            {expandedRows.includes(member._id) && (
+                              <div className="sm:hidden mt-2 space-y-1 text-sm text-gray-500">
+                                <div><strong>Phone:</strong> {member.phone || '-'}</div>
+                                <div><strong>Email:</strong> {member.email || '-'}</div>
+                                <div><strong>Join Date:</strong> {new Date(member.joinDate).toLocaleDateString()}</div>
+                                <div>
+                                  <strong>Status:</strong> 
+                                  <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${member.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    {member.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500 hidden sm:table-cell">
+                            {member.phone || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500 hidden sm:table-cell">
+                            {member.email || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500 hidden md:table-cell">
+                            {new Date(member.joinDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                            <span className={`px-2 py-1 text-xs rounded-full ${member.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {member.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                onClick={() => handleEdit(member)}
+                                className="text-blue-600 hover:text-blue-900 p-1"
+                                disabled={isProcessing}
+                                title="Edit"
+                              >
+                                <FaUserEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(member._id)}
+                                className="text-red-600 hover:text-red-900 p-1"
+                                disabled={isProcessing}
+                                title="Delete"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
                     ))
                   )}
                 </tbody>
